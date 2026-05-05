@@ -33,8 +33,12 @@ export function SignupForm({ onSubmit }: SignupFormProps) {
                     email: values.email.trim(),
                     password: values.password,
                 });
-            } catch {
-                setError("root", { message: "Sign-up failed. Please try again." });
+            } catch (error) {
+                const message =
+                    error instanceof Error
+                        ? error.message
+                        : "Sign-up failed. Please try again.";
+                setError("root", { message });
             }
         },
         [onSubmit, setError]

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { LoginForm } from "@/features/auth/components/LoginForm";
+import { LoginFormContainer } from "@/features/auth/components/LoginFormContainer";
 
 export const metadata: Metadata = {
     title: "Login",
@@ -16,7 +16,7 @@ export default function LoginPage() {
                 </p>
 
                 <div className="mt-8">
-                    <LoginForm />
+                    <LoginFormContainer />
                 </div>
             </div>
         </main>

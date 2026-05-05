@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { SignupForm } from "@/features/auth/components/SignupForm";
+import { SignupFormContainer } from "@/features/auth/components/SignupFormContainer";
 
 export const metadata: Metadata = {
     title: "Sign up",
@@ -16,7 +16,7 @@ export default function SignupPage() {
                 </p>
 
                 <div className="mt-8">
-                    <SignupForm />
+                    <SignupFormContainer />
                 </div>
             </div>
         </main>
