@@ -26,12 +26,12 @@ const setRefreshCookie = (res: Response, token: string): void => {
     httpOnly: true,
     sameSite: "lax",
     secure: env.NODE_ENV === "production",
-    path: "/auth",
+    path: "/v1",
   });
 };
 
 const clearRefreshCookie = (res: Response): void => {
-  res.clearCookie(env.JWT_REFRESH_COOKIE_NAME, { path: "/auth" });
+  res.clearCookie(env.JWT_REFRESH_COOKIE_NAME, { path: "/v1" });
 };
 
 export const authController = {

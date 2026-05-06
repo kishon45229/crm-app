@@ -41,13 +41,22 @@ enum SalesPerson {
   Unassigned
 }
 
+enum LeadSource {
+  Website
+  LinkedIn
+  Referral
+  ColdEmail
+  Event
+  Other
+}
+
 model Lead {
   id          String      @id @default(uuid())
   name        String
-  companyName String
+  companyName String      @default("")
   email       String      @unique
   phoneNumber String
-  source      String
+  source      LeadSource  @default(Other)
   assignedTo  SalesPerson @default(Unassigned)
   status      LeadStatus  @default(New)
   dealValue   Float
@@ -58,14 +67,14 @@ model Lead {
 }
 
 model LeadNote {
-  id        String   @id @default(uuid())
-  leadId    String
-  content   String
+  id          String   @id @default(uuid())
+  leadId      String
+  content     String
   createdById String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  lead      Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
   createdBy User @relation(fields: [createdById], references: [id], onDelete: Cascade)
 
   @@index([leadId])
