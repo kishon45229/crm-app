@@ -1,3 +1,4 @@
+import * as React from "react";
 import { Box, Button, FormControl, InputLabel, MenuItem, Paper, Select, Stack, TextField, Typography } from "@mui/material";
 import { Controller } from "react-hook-form";
 
@@ -5,20 +6,28 @@ import { LEAD_STATUSES } from "@/features/leads/types";
 import { useLeadPanelsContext } from "./lead-panels-context";
 
 export function LeadPanelsCreateSection() {
-    const { createForm, onCreateSubmit } = useLeadPanelsContext();
+    const { createForm, onCreateSubmit, createdByUserName } = useLeadPanelsContext();
     const {
         register,
         handleSubmit,
         control,
-        formState: { errors, isValid },
+        setValue,
+        formState: { errors, isValid, submitCount },
         reset,
     } = createForm;
+
+    React.useEffect(() => {
+        setValue("createdBy", createdByUserName, { shouldValidate: true });
+    }, [createdByUserName, setValue, submitCount]);
 
     return (
         <Paper variant="outlined" sx={{ mt: 3, borderRadius: 2, p: 3 }}>
             <Stack spacing={2}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
                     Lead information
+                </Typography>
+                <Typography variant="caption" sx={{ color: "text.secondary", mb: 1 }}>
+                    * Required fields.
                 </Typography>
 
                 <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
@@ -113,9 +122,32 @@ export function LeadPanelsCreateSection() {
                         helperText={errors.estimatedDealValue?.message}
                     />
                 </Stack>
+                <TextField
+                    {...register("note")}
+                    label="Note"
+                    fullWidth
+                    multiline
+                    minRows={3}
+                    error={!!errors.note}
+                    helperText={errors.note?.message}
+                />
+                <TextField
+                    {...register("createdBy")}
+                    label="CreatedBy"
+                    fullWidth
+                    slotProps={{ input: { readOnly: true } }}
+                    error={!!errors.createdBy}
+                    helperText={errors.createdBy?.message}
+                />
 
                 <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1.5 }}>
-                    <Button variant="outlined" onClick={() => reset()}>
+                    <Button
+                        variant="outlined"
+                        onClick={() => {
+                            reset();
+                            setValue("createdBy", createdByUserName, { shouldValidate: true });
+                        }}
+                    >
                         Reset
                     </Button>
                     <Button variant="contained" onClick={handleSubmit(onCreateSubmit)} disabled={!isValid}>

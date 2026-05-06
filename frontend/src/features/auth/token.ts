@@ -74,3 +74,23 @@ export function getAccessTokenUserId(token: string): string | null {
 
   return typeof payload.sub === "string" ? payload.sub : null;
 }
+
+export function getAccessTokenUserName(token: string): string | null {
+  const payload = decodeJwtPayload(token);
+  if (!payload) return null;
+
+  const candidates = [
+    payload.userName,
+    payload.username,
+    payload.name,
+    payload.email,
+  ];
+
+  for (const value of candidates) {
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+  }
+
+  return null;
+}

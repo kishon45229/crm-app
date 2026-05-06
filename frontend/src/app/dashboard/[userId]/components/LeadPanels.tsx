@@ -15,9 +15,10 @@ export type LeadPanelsProps = {
     setActiveSection: (key: DashboardSectionKey) => void;
     leadState: ReturnType<typeof useLeads>;
     createdByUserId: string;
+    createdByUserName: string;
 };
 
-export function LeadPanels({ activeSection, setActiveSection, leadState, createdByUserId }: LeadPanelsProps) {
+export function LeadPanels({ activeSection, setActiveSection, leadState, createdByUserId, createdByUserName }: LeadPanelsProps) {
     const panelState = useLeadPanelsState({
         activeSection,
         setActiveSection,
@@ -30,6 +31,7 @@ export function LeadPanels({ activeSection, setActiveSection, leadState, created
                 activeSection,
                 setActiveSection,
                 createdByUserId,
+                createdByUserName,
                 leadState,
                 ...panelState,
             }}
