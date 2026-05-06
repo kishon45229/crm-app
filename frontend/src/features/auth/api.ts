@@ -136,7 +136,7 @@ async function requestJson<TResponse>(
 }
 
 export async function refreshAccessToken(): Promise<string> {
-  const response = await postJson<RefreshResponse>("/refresh", {});
+  const response = await postJson<RefreshResponse>("/auth/refresh", {});
   setAccessToken(response.accessToken);
   return response.accessToken;
 }
