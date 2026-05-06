@@ -46,6 +46,21 @@ export function SignupForm({ onSubmit }: SignupFormProps) {
 
     const formErrorMessage = errors.root?.message;
 
+    const textFieldSx = React.useCallback(
+        (theme: import("@mui/material/styles").Theme) => ({
+            "& .MuiOutlinedInput-notchedOutline": {
+                borderWidth: 1,
+                borderStyle: "solid",
+                borderColor: theme.palette.divider,
+            },
+            "&:hover .MuiOutlinedInput-notchedOutline": {
+                borderWidth: 1,
+                borderColor: theme.palette.text.primary,
+            },
+        }),
+        []
+    );
+
     return (
         <Box component="form" noValidate onSubmit={handleSubmit(onValidSubmit)}>
             <Stack spacing={2}>
@@ -68,6 +83,7 @@ export function SignupForm({ onSubmit }: SignupFormProps) {
                             autoFocus
                             fullWidth
                             color="success"
+                            sx={textFieldSx}
                             error={Boolean(errors.username?.message)}
                             helperText={errors.username?.message}
                         />
@@ -94,6 +110,7 @@ export function SignupForm({ onSubmit }: SignupFormProps) {
                             inputMode="email"
                             fullWidth
                             color="success"
+                            sx={textFieldSx}
                             error={Boolean(errors.email?.message)}
                             helperText={errors.email?.message}
                         />
@@ -119,6 +136,7 @@ export function SignupForm({ onSubmit }: SignupFormProps) {
                             autoComplete="new-password"
                             fullWidth
                             color="success"
+                            sx={textFieldSx}
                             error={Boolean(errors.password?.message)}
                             helperText={errors.password?.message}
                         />
