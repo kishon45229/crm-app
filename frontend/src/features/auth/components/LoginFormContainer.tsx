@@ -12,8 +12,8 @@ export function LoginFormContainer() {
 
     const handleSubmit = React.useCallback(
         async (values: LoginValues) => {
-            await login(values);
-            router.push("/");
+            const response = await login(values);
+            router.push(`/dashboard/${response.user.id}`);
         },
         [router]
     );

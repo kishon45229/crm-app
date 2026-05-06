@@ -9,6 +9,7 @@ import morgan from "morgan";
 import { env } from "./config/env";
 import { errorHandler } from "./errors/errorHandler";
 import { authRouter } from "./routes/auth.routes";
+import { leadRouter } from "./routes/lead.routes";
 
 export const app = express();
 
@@ -46,6 +47,7 @@ app.get("/health", (_req, res) => {
 });
 
 app.use("/v1/auth", authRouter);
+app.use("/v1/leads", leadRouter);
 
 // Catch-all handler for unmatched routes
 app.use((req, res) => {

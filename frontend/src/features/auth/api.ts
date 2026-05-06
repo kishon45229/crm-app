@@ -1,4 +1,16 @@
-import type { LoginValues, SignupValues } from "./types";
+import type {
+  LoginResponse,
+  LoginValues,
+  RefreshResponse,
+  SignupValues,
+} from "./types";
+
+import {
+  clearAccessToken,
+  getAccessToken,
+  isAccessTokenExpired,
+  setAccessToken,
+} from "./token";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -39,6 +51,7 @@ async function postJson<TResponse>(
 
   const response = await fetch(url, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
@@ -55,11 +68,108 @@ async function postJson<TResponse>(
   return payload as TResponse;
 }
 
-export async function login(values: LoginValues): Promise<unknown> {
-  return postJson("/auth/login", {
+async function requestJson<TResponse>(
+  path: string,
+  init: RequestInit,
+  options?: { auth?: boolean },
+): Promise<TResponse> {
+  const url = `${getApiBaseUrl()}${path.startsWith("/") ? "" : "/"}${path}`;
+
+  const authEnabled = options?.auth ?? false;
+  let accessToken = authEnabled ? getAccessToken() : null;
+
+  if (authEnabled && accessToken && isAccessTokenExpired(accessToken)) {
+    try {
+      accessToken = await refreshAccessToken();
+    } catch {
+      clearAccessToken();
+      accessToken = null;
+    }
+  }
+
+  const headers = new Headers(init.headers);
+  if (authEnabled && accessToken) {
+    headers.set("Authorization", `Bearer ${accessToken}`);
+  }
+
+  const response = await fetch(url, {
+    ...init,
+    credentials: "include",
+    headers,
+  });
+
+  if (authEnabled && response.status === 401 && accessToken) {
+    try {
+      const refreshed = await refreshAccessToken();
+      const retryHeaders = new Headers(init.headers);
+      retryHeaders.set("Authorization", `Bearer ${refreshed}`);
+
+      const retryResponse = await fetch(url, {
+        ...init,
+        credentials: "include",
+        headers: retryHeaders,
+      });
+
+      const retryText = await retryResponse.text();
+      const retryPayload = retryText
+        ? (JSON.parse(retryText) as unknown)
+        : null;
+
+      if (!retryResponse.ok) {
+        throw new Error(getErrorMessage(retryResponse.status, retryPayload));
+      }
+
+      return retryPayload as TResponse;
+    } catch {
+      clearAccessToken();
+    }
+  }
+
+  const rawText = await response.text();
+  const payload = rawText ? (JSON.parse(rawText) as unknown) : null;
+
+  if (!response.ok) {
+    throw new Error(getErrorMessage(response.status, payload));
+  }
+
+  return payload as TResponse;
+}
+
+export async function refreshAccessToken(): Promise<string> {
+  const response = await postJson<RefreshResponse>("/refresh", {});
+  setAccessToken(response.accessToken);
+  return response.accessToken;
+}
+
+export async function authedGet<TResponse>(path: string): Promise<TResponse> {
+  return requestJson<TResponse>(path, { method: "GET" }, { auth: true });
+}
+
+export async function authedPost<TResponse>(
+  path: string,
+  body: JsonRecord,
+): Promise<TResponse> {
+  return requestJson<TResponse>(
+    path,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    },
+    { auth: true },
+  );
+}
+
+export async function login(values: LoginValues): Promise<LoginResponse> {
+  const response = await postJson<LoginResponse>("/auth/login", {
     email: values.email,
     password: values.password,
   });
+
+  setAccessToken(response.accessToken);
+  return response;
 }
 
 export async function signup(values: SignupValues): Promise<unknown> {
