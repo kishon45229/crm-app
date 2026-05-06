@@ -7,6 +7,8 @@ import helmet from "helmet";
 import hpp from "hpp";
 import morgan from "morgan";
 import { env } from "./config/env";
+import { errorHandler } from "./errors/errorHandler";
+import { authRouter } from "./routes/auth.routes";
 
 export const app = express();
 
@@ -43,7 +45,11 @@ app.get("/health", (_req, res) => {
   res.status(200).json({ ok: true });
 });
 
+app.use("/auth", authRouter);
+
 // Catch-all handler for unmatched routes
 app.use("*", (req, res) => {
   res.status(404).json({ message: "Endpoint not found" });
 });
+
+app.use(errorHandler);
