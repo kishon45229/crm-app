@@ -162,6 +162,27 @@ export async function authedPost<TResponse>(
   );
 }
 
+export async function authedPatch<TResponse>(
+  path: string,
+  body: JsonRecord,
+): Promise<TResponse> {
+  return requestJson<TResponse>(
+    path,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    },
+    { auth: true },
+  );
+}
+
+export async function authedDelete<TResponse>(path: string): Promise<TResponse> {
+  return requestJson<TResponse>(path, { method: "DELETE" }, { auth: true });
+}
+
 export async function login(values: LoginValues): Promise<LoginResponse> {
   const response = await postJson<LoginResponse>("/auth/login", {
     email: values.email,

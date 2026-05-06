@@ -6,7 +6,7 @@ import { loadLeads, saveLeads } from "./storage";
 import type { Lead, LeadNote, LeadStatus } from "./types";
 import { LEAD_STATUSES } from "./types";
 
-import { getAccessToken } from "@/features/auth/token";
+import { authedDelete, authedGet, authedPatch } from "@/features/auth/api";
 
 export type LeadDraft = {
   leadName: string;
@@ -72,11 +72,23 @@ function coerceLeadNote(raw: unknown): LeadNote | null {
   const note = raw as Record<string, unknown>;
   const id = asString(note.id ?? note.noteId ?? note.note_id);
   if (!id) return null;
+  const createdByRaw =
+    note.createdBy && typeof note.createdBy === "object"
+      ? (note.createdBy as Record<string, unknown>)
+      : null;
   return {
     id,
     content: asString(note.content ?? note.note ?? ""),
-    createdBy: asString(note.createdBy ?? note.created_by ?? ""),
-    createdDate: asIsoDate(note.createdDate ?? note.created_date),
+    createdBy: asString(
+      note.createdBy ??
+        note.created_by ??
+        createdByRaw?.userName ??
+        createdByRaw?.email ??
+        "",
+    ),
+    createdDate: asIsoDate(
+      note.createdDate ?? note.created_date ?? note.createdAt,
+    ),
   };
 }
 
@@ -93,20 +105,25 @@ function coerceLead(raw: unknown): Lead | null {
 
   return {
     id,
-    leadName: asString(lead.leadName ?? lead.lead_name ?? ""),
+    leadName: asString(lead.leadName ?? lead.lead_name ?? lead.name ?? ""),
     companyName: asString(lead.companyName ?? lead.company_name ?? ""),
     email: asString(lead.email ?? ""),
     phoneNumber: asString(lead.phoneNumber ?? lead.phone_number ?? ""),
-    leadSource: asString(lead.leadSource ?? lead.lead_source ?? ""),
+    leadSource: asString(lead.leadSource ?? lead.lead_source ?? lead.source ?? ""),
     assignedSalesperson: asString(
-      lead.assignedSalesperson ?? lead.assigned_salesperson ?? "",
+      lead.assignedSalesperson ??
+        lead.assigned_salesperson ??
+        lead.assignedTo ??
+        "",
     ),
     status: toLeadStatus(lead.status),
     estimatedDealValue: asNumber(
-      lead.estimatedDealValue ?? lead.estimated_deal_value ?? 0,
+      lead.estimatedDealValue ?? lead.estimated_deal_value ?? lead.dealValue ?? 0,
     ),
-    createdDate: asIsoDate(lead.createdDate ?? lead.created_date),
-    lastUpdatedDate: asIsoDate(lead.lastUpdatedDate ?? lead.last_updated_date),
+    createdDate: asIsoDate(lead.createdDate ?? lead.created_date ?? lead.createdAt),
+    lastUpdatedDate: asIsoDate(
+      lead.lastUpdatedDate ?? lead.last_updated_date ?? lead.updatedAt,
+    ),
     notes,
   };
 }
@@ -138,6 +155,19 @@ function toDraft(lead: Lead): LeadDraft {
   };
 }
 
+function draftToPatch(draft: LeadDraft): Partial<Omit<Lead, "id" | "createdDate">> {
+  return {
+    leadName: draft.leadName.trim(),
+    companyName: draft.companyName.trim(),
+    email: draft.email.trim(),
+    phoneNumber: draft.phoneNumber.trim(),
+    leadSource: draft.leadSource.trim(),
+    assignedSalesperson: draft.assignedSalesperson.trim(),
+    status: draft.status,
+    estimatedDealValue: Number(draft.estimatedDealValue || 0),
+  };
+}
+
 export function useLeads(userId: string) {
   const [leads, setLeads] = React.useState<Lead[]>(() => loadLeads(userId));
   const [selectedLeadId, setSelectedLeadId] = React.useState<string>(() => {
@@ -166,23 +196,12 @@ export function useLeads(userId: string) {
   }, [leads, userId]);
 
   const refreshFromServer = React.useCallback(async () => {
-    const token = getAccessToken();
-    if (!token) return;
+    const data = await authedGet<unknown>("/leads").catch(() => null);
+    if (!data || typeof data !== "object") return;
+    const payload = data as { leads?: unknown };
+    if (!Array.isArray(payload.leads)) return;
 
-    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "";
-    const response = await fetch(`${baseUrl}/leads`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) return;
-
-    const data = (await response.json()) as unknown;
-    if (!Array.isArray(data)) return;
-
-    const serverLeads = data.map(coerceLead).filter(Boolean) as Lead[];
+    const serverLeads = payload.leads.map(coerceLead).filter(Boolean) as Lead[];
 
     const previousSelectedLeadId = selectedLeadIdRef.current;
     const nextSelectedLeadId =
@@ -262,29 +281,42 @@ export function useLeads(userId: string) {
     [],
   );
 
-  const saveEditDraft = React.useCallback(() => {
-    if (!selectedLead) return;
+  const saveEditDraft = React.useCallback(async () => {
+    if (!selectedLead) return false;
 
-    updateLead(selectedLead.id, {
-      leadName: editDraft.leadName.trim(),
-      companyName: editDraft.companyName.trim(),
-      email: editDraft.email.trim(),
-      phoneNumber: editDraft.phoneNumber.trim(),
-      leadSource: editDraft.leadSource.trim(),
-      assignedSalesperson: editDraft.assignedSalesperson.trim(),
-      status: editDraft.status,
-      estimatedDealValue: Number(editDraft.estimatedDealValue || 0),
-    });
+    const patch = draftToPatch(editDraft);
+    const endpoint = `/leads/${selectedLead.id}`;
+    await authedPatch<unknown>(endpoint, patch as Record<string, unknown>);
+    updateLead(selectedLead.id, patch);
+    return true;
   }, [editDraft, selectedLead, updateLead]);
 
+  const saveLeadEdit = React.useCallback(
+    async (leadId: string, draft: LeadDraft) => {
+      const patch = draftToPatch(draft);
+      await authedPatch<unknown>(
+        `/leads/${leadId}`,
+        patch as Record<string, unknown>,
+      );
+      updateLead(leadId, patch);
+      if (selectedLeadIdRef.current === leadId) {
+        setEditDraft(draft);
+      }
+      return true;
+    },
+    [updateLead],
+  );
+
   const deleteLead = React.useCallback(
-    (leadId: string) => {
+    async (leadId: string) => {
+      await authedDelete<unknown>(`/leads/${leadId}`);
       setLeads((prev) => prev.filter((lead) => lead.id !== leadId));
       if (selectedLeadId === leadId) {
         setSelectedLeadId("");
         setNoteDraft("");
         setEditDraft(emptyDraft());
       }
+      return true;
     },
     [selectedLeadId],
   );
@@ -361,6 +393,7 @@ export function useLeads(userId: string) {
     editDraft,
     setEditDraft,
     saveEditDraft,
+    saveLeadEdit,
 
     noteDraft,
     setNoteDraft,
