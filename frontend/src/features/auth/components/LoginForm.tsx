@@ -65,7 +65,9 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
                             type="email"
                             autoComplete="email"
                             inputMode="email"
+                            autoFocus
                             fullWidth
+                            color="success"
                             error={Boolean(errors.email?.message)}
                             helperText={errors.email?.message}
                         />
@@ -86,6 +88,7 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
                             type="password"
                             autoComplete="current-password"
                             fullWidth
+                            color="success"
                             error={Boolean(errors.password?.message)}
                             helperText={errors.password?.message}
                         />
@@ -97,6 +100,7 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
                 <Button
                     type="submit"
                     variant="contained"
+                    color="success"
                     disabled={isSubmitting}
                     fullWidth
                     size="large"
