@@ -9,7 +9,7 @@ const envSchema = z.object({
     .default("4000")
     .transform((value) => Number(value)),
   DATABASE_URL: z.string(),
-  CORS_ORIGIN: z.string().default("http://localhost:4000"),
+  CORS_ORIGIN: z.string().default("http://localhost:3000"),
   JWT_ACCESS_SECRET: z.string(),
   JWT_REFRESH_SECRET: z.string(),
   JWT_ACCESS_EXPIRES_IN: z.string().default("15m"),
