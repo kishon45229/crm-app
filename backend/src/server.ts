@@ -45,10 +45,10 @@ app.get("/health", (_req, res) => {
   res.status(200).json({ ok: true });
 });
 
-app.use("/auth", authRouter);
+app.use("/v1/auth", authRouter);
 
 // Catch-all handler for unmatched routes
-app.use("*", (req, res) => {
+app.use((req, res) => {
   res.status(404).json({ message: "Endpoint not found" });
 });
 
