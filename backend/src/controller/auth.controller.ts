@@ -53,6 +53,7 @@ export const authController = {
   },
 
   async login(req: Request, res: Response) {
+    console.log("Login request body:", req.body); // Debug log
     const parsed = loginSchema.safeParse(req.body);
     if (!parsed.success) {
       throw new HttpError(400, "Invalid request", {
