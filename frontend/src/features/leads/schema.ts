@@ -22,6 +22,11 @@ export const createLeadSchema = z.object({
       (val) => !val || (!isNaN(Number(val)) && Number(val) >= 0),
       "Estimated deal value must be a positive number",
     ),
+  note: z
+    .string()
+    .max(2000, "Note must be less than 2000 characters")
+    .optional(),
+  createdBy: z.string().optional(),
 });
 
 export type CreateLeadInput = z.infer<typeof createLeadSchema>;

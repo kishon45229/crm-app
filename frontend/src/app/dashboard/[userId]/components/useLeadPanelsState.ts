@@ -23,7 +23,7 @@ export function useLeadPanelsState({
     setActiveSection,
     leadState,
 }: UseLeadPanelsStateArgs) {
-    const { leads, createLead, setCreateDraft, selectLead, saveLeadEdit, deleteLead } = leadState;
+    const { leads, createLead, setCreateDraft, selectLead, saveLeadEdit, deleteLead, addNote } = leadState;
 
     const section = React.useMemo(() => getSection(activeSection), [activeSection]);
 
@@ -39,6 +39,8 @@ export function useLeadPanelsState({
             assignedSalesperson: "",
             status: "New",
             estimatedDealValue: "",
+            note: "",
+            createdBy: "",
         },
     });
 
@@ -61,11 +63,16 @@ export function useLeadPanelsState({
         (data: CreateLeadInput) => {
             setCreateDraft(data);
             const created = createLead();
+            const note = data.note?.trim();
+            const createdBy = data.createdBy?.trim();
+            if (note) {
+                addNote(created.id, createdBy || "Unknown author", note);
+            }
             selectLead(created.id);
             setActiveSection("view");
             createForm.reset();
         },
-        [createForm, createLead, selectLead, setActiveSection, setCreateDraft],
+        [addNote, createForm, createLead, selectLead, setActiveSection, setCreateDraft],
     );
 
     const openEditModal = React.useCallback(
