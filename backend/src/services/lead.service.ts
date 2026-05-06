@@ -4,12 +4,12 @@ import { HttpError } from "../errors/httpError";
 
 type CreateLeadInput = {
   name: string;
-  companyName: string;
+  companyName?: string;
   email: string;
   phoneNumber: string;
-  source: string;
-  assignedTo?: Prisma.LeadCreateInput["assignedTo"];
-  status?: Prisma.LeadCreateInput["status"];
+  source: Prisma.LeadCreateInput["source"];
+  assignedTo: Prisma.LeadCreateInput["assignedTo"];
+  status: Prisma.LeadCreateInput["status"];
   dealValue: number;
 };
 
@@ -37,7 +37,7 @@ export const leadService = {
       const lead = await prisma.lead.create({
         data: {
           name: input.name,
-          companyName: input.companyName,
+          companyName: input.companyName || "",
           email: input.email,
           phoneNumber: input.phoneNumber,
           source: input.source,
@@ -94,7 +94,7 @@ export const leadService = {
         where: { id },
         data: {
           name: input.name,
-          companyName: input.companyName,
+          companyName: input.companyName || "",
           email: input.email,
           phoneNumber: input.phoneNumber,
           source: input.source,
@@ -138,6 +138,29 @@ export const leadService = {
     try {
       await prisma.lead.delete({ where: { id } });
       return { ok: true };
+    } catch (err) {
+      if (isRecordNotFoundError(err)) {
+        throw new HttpError(404, "Lead not found", { code: "LEAD_NOT_FOUND" });
+      }
+      throw err;
+    }
+  },
+
+  async addLeadNote(input: {
+    leadId: string;
+    content: string;
+    createdById: string;
+  }) {
+    try {
+      const note = await prisma.leadNote.create({
+        data: {
+          leadId: input.leadId,
+          content: input.content,
+          createdById: input.createdById,
+        },
+      });
+
+      return { note };
     } catch (err) {
       if (isRecordNotFoundError(err)) {
         throw new HttpError(404, "Lead not found", { code: "LEAD_NOT_FOUND" });

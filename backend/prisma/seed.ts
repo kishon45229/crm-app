@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { PrismaClient, LeadStatus, SalesPerson } from "@prisma/client";
+import { PrismaClient, LeadStatus, SalesPerson, LeadSource } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -31,7 +31,7 @@ export async function seedDatabase() {
       name: "Dummy Lead",
       companyName: "Dummy Company",
       phoneNumber: "+94-777-123-456",
-      source: "LinkedIn",
+      source: LeadSource.Other,
       assignedTo: SalesPerson.Unassigned,
       status: LeadStatus.New,
       dealValue: 5000,
@@ -41,7 +41,7 @@ export async function seedDatabase() {
       companyName: "Dummy Company",
       email: "dummyLead@gmail.com",
       phoneNumber: "+94-777-123-456",
-      source: "LinkedIn",
+       source: LeadSource.Other,
       assignedTo: SalesPerson.Unassigned,
       status: LeadStatus.New,
       dealValue: 5000,

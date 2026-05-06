@@ -8,6 +8,7 @@ export const leadRouter = Router();
 leadRouter.use(requireAuth);
 
 leadRouter.post("/", asyncHandler(leadController.create));
+leadRouter.post("/note/:id", asyncHandler(leadController.addNote));
 leadRouter.get("/", asyncHandler(leadController.list));
 leadRouter.get("/:id", asyncHandler(leadController.getById));
 leadRouter.patch("/:id", asyncHandler(leadController.update));
