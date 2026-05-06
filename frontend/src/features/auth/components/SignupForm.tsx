@@ -65,7 +65,9 @@ export function SignupForm({ onSubmit }: SignupFormProps) {
                             id="username"
                             label="Username"
                             autoComplete="username"
+                            autoFocus
                             fullWidth
+                            color="success"
                             error={Boolean(errors.username?.message)}
                             helperText={errors.username?.message}
                         />
@@ -91,6 +93,7 @@ export function SignupForm({ onSubmit }: SignupFormProps) {
                             autoComplete="email"
                             inputMode="email"
                             fullWidth
+                            color="success"
                             error={Boolean(errors.email?.message)}
                             helperText={errors.email?.message}
                         />
@@ -115,6 +118,7 @@ export function SignupForm({ onSubmit }: SignupFormProps) {
                             type="password"
                             autoComplete="new-password"
                             fullWidth
+                            color="success"
                             error={Boolean(errors.password?.message)}
                             helperText={errors.password?.message}
                         />
@@ -126,6 +130,7 @@ export function SignupForm({ onSubmit }: SignupFormProps) {
                 <Button
                     type="submit"
                     variant="contained"
+                    color="success"
                     disabled={isSubmitting}
                     fullWidth
                     size="large"
