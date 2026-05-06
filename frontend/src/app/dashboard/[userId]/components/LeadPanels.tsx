@@ -1,9 +1,14 @@
 import * as React from "react";
 import {
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
     Box,
     Button,
     Divider,
     FormControl,
+    IconButton,
     InputLabel,
     MenuItem,
     Paper,
@@ -18,6 +23,8 @@ import {
     TextField,
     Typography,
 } from "@mui/material";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -62,6 +69,7 @@ export function LeadPanels({
         editDraft,
         setEditDraft,
         saveEditDraft,
+        saveLeadEdit,
         noteDraft,
         setNoteDraft,
         addNote,
@@ -85,6 +93,20 @@ export function LeadPanels({
     });
 
     const { register, handleSubmit, control, formState: { errors, isValid }, reset } = createForm;
+    const [isEditOpen, setIsEditOpen] = React.useState(false);
+    const [editingLeadId, setEditingLeadId] = React.useState<string>("");
+    const [editForm, setEditForm] = React.useState({
+        leadName: "",
+        companyName: "",
+        email: "",
+        phoneNumber: "",
+        leadSource: "",
+        assignedSalesperson: "",
+        status: "New" as LeadStatus,
+        estimatedDealValue: "",
+    });
+    const [isSavingEdit, setIsSavingEdit] = React.useState(false);
+    const [isDeletingLeadId, setIsDeletingLeadId] = React.useState<string>("");
 
     const onCreateSubmit = (data: CreateLeadInput) => {
         setCreateDraft(data);
@@ -92,6 +114,45 @@ export function LeadPanels({
         selectLead(created.id);
         setActiveSection("view");
         reset();
+    };
+
+    const openEditModal = (leadId: string) => {
+        const lead = leads.find((item) => item.id === leadId);
+        if (!lead) return;
+        setEditingLeadId(lead.id);
+        setEditForm({
+            leadName: lead.leadName,
+            companyName: lead.companyName,
+            email: lead.email,
+            phoneNumber: lead.phoneNumber,
+            leadSource: lead.leadSource,
+            assignedSalesperson: lead.assignedSalesperson,
+            status: lead.status,
+            estimatedDealValue: lead.estimatedDealValue === 0 ? "" : String(lead.estimatedDealValue),
+        });
+        setIsEditOpen(true);
+    };
+
+    const handleSaveEdit = async () => {
+        if (!editingLeadId) return;
+        try {
+            setIsSavingEdit(true);
+            await saveLeadEdit(editingLeadId, editForm);
+            setIsEditOpen(false);
+        } finally {
+            setIsSavingEdit(false);
+        }
+    };
+
+    const handleDeleteLead = async (leadId: string) => {
+        const ok = window.confirm("Are you sure you want to delete this lead?");
+        if (!ok) return;
+        try {
+            setIsDeletingLeadId(leadId);
+            await deleteLead(leadId);
+        } finally {
+            setIsDeletingLeadId("");
+        }
     };
 
     return (
@@ -283,14 +344,25 @@ export function LeadPanels({
                                                 {new Date(lead.lastUpdatedDate).toLocaleString()}
                                             </TableCell>
                                             <TableCell align="right">
-                                                <Button
-                                                    size="small"
-                                                    color="error"
-                                                    variant="outlined"
-                                                    onClick={() => deleteLead(lead.id)}
-                                                >
-                                                    Delete
-                                                </Button>
+                                                <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 0.5 }}>
+                                                    <IconButton
+                                                        size="small"
+                                                        color="primary"
+                                                        onClick={() => openEditModal(lead.id)}
+                                                        aria-label="Edit lead"
+                                                    >
+                                                        <EditOutlinedIcon fontSize="small" />
+                                                    </IconButton>
+                                                    <IconButton
+                                                        size="small"
+                                                        color="error"
+                                                        onClick={() => void handleDeleteLead(lead.id)}
+                                                        disabled={isDeletingLeadId === lead.id}
+                                                        aria-label="Delete lead"
+                                                    >
+                                                        <DeleteOutlinedIcon fontSize="small" />
+                                                    </IconButton>
+                                                </Box>
                                             </TableCell>
                                         </TableRow>
                                     ))}
@@ -300,6 +372,82 @@ export function LeadPanels({
                     )}
                 </Paper>
             ) : null}
+
+            <Dialog open={isEditOpen} onClose={() => setIsEditOpen(false)} fullWidth maxWidth="sm">
+                <DialogTitle>Edit Lead</DialogTitle>
+                <DialogContent>
+                    <Stack spacing={2} sx={{ mt: 1 }}>
+                        <TextField
+                            label="Lead Name"
+                            value={editForm.leadName}
+                            onChange={(event) => setEditForm((prev) => ({ ...prev, leadName: event.target.value }))}
+                            fullWidth
+                        />
+                        <TextField
+                            label="Company Name"
+                            value={editForm.companyName}
+                            onChange={(event) => setEditForm((prev) => ({ ...prev, companyName: event.target.value }))}
+                            fullWidth
+                        />
+                        <TextField
+                            label="Email"
+                            value={editForm.email}
+                            onChange={(event) => setEditForm((prev) => ({ ...prev, email: event.target.value }))}
+                            fullWidth
+                        />
+                        <TextField
+                            label="Phone Number"
+                            value={editForm.phoneNumber}
+                            onChange={(event) => setEditForm((prev) => ({ ...prev, phoneNumber: event.target.value }))}
+                            fullWidth
+                        />
+                        <TextField
+                            label="Lead Source"
+                            value={editForm.leadSource}
+                            onChange={(event) => setEditForm((prev) => ({ ...prev, leadSource: event.target.value }))}
+                            fullWidth
+                        />
+                        <TextField
+                            label="Assigned Salesperson"
+                            value={editForm.assignedSalesperson}
+                            onChange={(event) => setEditForm((prev) => ({ ...prev, assignedSalesperson: event.target.value }))}
+                            fullWidth
+                        />
+                        <FormControl fullWidth>
+                            <InputLabel id="edit-status-label">Status</InputLabel>
+                            <Select
+                                labelId="edit-status-label"
+                                value={editForm.status}
+                                label="Status"
+                                onChange={(event) =>
+                                    setEditForm((prev) => ({ ...prev, status: event.target.value as LeadStatus }))
+                                }
+                            >
+                                {LEAD_STATUSES.map((status) => (
+                                    <MenuItem key={status} value={status}>
+                                        {status}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                        <TextField
+                            label="Estimated Deal Value"
+                            type="number"
+                            value={editForm.estimatedDealValue}
+                            onChange={(event) =>
+                                setEditForm((prev) => ({ ...prev, estimatedDealValue: event.target.value }))
+                            }
+                            fullWidth
+                        />
+                    </Stack>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setIsEditOpen(false)}>Cancel</Button>
+                    <Button variant="contained" onClick={() => void handleSaveEdit()} disabled={isSavingEdit}>
+                        Save
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </>
     );
 }
