@@ -17,6 +17,7 @@ export type LoginResponse = {
 };
 
 export type RefreshResponse = {
+  user: AuthUser;
   accessToken: string;
 };
 
