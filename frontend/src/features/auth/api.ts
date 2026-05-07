@@ -11,6 +11,7 @@ import {
   isAccessTokenExpired,
   setAccessToken,
 } from "./token";
+import { setUser } from "./user";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -188,7 +189,7 @@ export async function login(values: LoginValues): Promise<LoginResponse> {
     email: values.email,
     password: values.password,
   });
-
+  setUser(response.user);
   setAccessToken(response.accessToken);
   return response;
 }

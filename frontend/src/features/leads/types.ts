@@ -36,3 +36,29 @@ export const LEAD_STATUSES: LeadStatus[] = [
   "Won",
   "Lost",
 ];
+
+export type LeadSource =
+  | "Website"
+  | "LinkedIn"
+  | "Referral"
+  | "ColdEmail"
+  | "Event"
+  | "Other";
+
+export const LEAD_SOURCES: LeadSource[] = [
+  "Website",
+  "LinkedIn",
+  "Referral",
+  "ColdEmail",
+  "Event",
+  "Other",
+];
+
+export type SalesPerson = "Alice" | "Bob" | "Charlie" | "Unassigned";
+
+export const SALES_PEOPLE: SalesPerson[] = [
+  "Alice",
+  "Bob",
+  "Charlie",
+  "Unassigned",
+];

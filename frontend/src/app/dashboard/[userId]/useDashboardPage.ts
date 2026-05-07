@@ -12,7 +12,7 @@ import {
 } from "@/features/auth/token";
 
 import { useLeads } from "@/features/leads/useLeads";
-
+import { getUser } from "@/features/auth/user";
 import type { DashboardSectionKey } from "./components/LeadSidebar";
 
 export type UseDashboardPageResult = {
@@ -25,20 +25,17 @@ export type UseDashboardPageResult = {
   leadState: ReturnType<typeof useLeads>;
 };
 
-export function useDashboardPage(userId: string): UseDashboardPageResult {
+export function useDashboardPage(): UseDashboardPageResult {
   const router = useRouter();
+  const user = getUser();
+  const userId = user?.id ?? "unknown_user";
 
   const [isReady, setIsReady] = React.useState(false);
   const [activeSection, setActiveSection] =
     React.useState<DashboardSectionKey>("home");
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
 
-  const leadState = useLeads(userId);
-
-  React.useEffect(() => {
-    if (!isReady) return;
-    void leadState.refreshFromServer();
-  }, [isReady, leadState]);
+  const leadState = useLeads();
 
   React.useEffect(() => {
     let cancelled = false;

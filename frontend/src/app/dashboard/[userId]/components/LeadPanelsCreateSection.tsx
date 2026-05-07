@@ -2,11 +2,12 @@ import * as React from "react";
 import { Box, Button, FormControl, InputLabel, MenuItem, Paper, Select, Stack, TextField, Typography } from "@mui/material";
 import { Controller } from "react-hook-form";
 
-import { LEAD_STATUSES } from "@/features/leads/types";
+import { LEAD_STATUSES, LEAD_SOURCES, SALES_PEOPLE } from "@/features/leads/types";
 import { useLeadPanelsContext } from "./lead-panels-context";
+import { getUser } from "@/features/auth/user";
 
 export function LeadPanelsCreateSection() {
-    const { createForm, onCreateSubmit, createdByUserName } = useLeadPanelsContext();
+    const { createForm, onCreateSubmit } = useLeadPanelsContext();
     const {
         register,
         handleSubmit,
@@ -15,6 +16,9 @@ export function LeadPanelsCreateSection() {
         formState: { errors, isValid, submitCount },
         reset,
     } = createForm;
+
+    const user = getUser();
+    const createdByUserName = user?.userName ?? "Unknown User";
 
     React.useEffect(() => {
         setValue("createdBy", createdByUserName, { shouldValidate: true });
@@ -68,19 +72,48 @@ export function LeadPanelsCreateSection() {
                 </Stack>
 
                 <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                    <TextField
-                        {...register("leadSource")}
-                        label="Lead Source"
-                        fullWidth
-                        error={!!errors.leadSource}
-                        helperText={errors.leadSource?.message}
+                    <Controller
+                        name="leadSource"
+                        control={control}
+                        render={({ field }) => (
+                            <FormControl fullWidth error={!!errors.leadSource}>
+                                <InputLabel id="create-source-label">Source</InputLabel>
+                                <Select {...field} labelId="create-source-label" label="Source">
+                                    {LEAD_SOURCES.map((source) => (
+                                        <MenuItem key={source} value={source}>
+                                            {source}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                                {errors.leadSource && (
+                                    <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.5 }}>
+                                        {errors.leadSource.message}
+                                    </Typography>
+                                )}
+                            </FormControl>
+                        )}
                     />
-                    <TextField
-                        {...register("assignedSalesperson")}
-                        label="Assigned Salesperson"
-                        fullWidth
-                        error={!!errors.assignedSalesperson}
-                        helperText={errors.assignedSalesperson?.message}
+
+                    <Controller
+                        name="assignedSalesperson"
+                        control={control}
+                        render={({ field }) => (
+                            <FormControl fullWidth error={!!errors.assignedSalesperson}>
+                                <InputLabel id="create-salesperson-label">Assigned Salesperson</InputLabel>
+                                <Select {...field} labelId="create-salesperson-label" label="Assigned Salesperson">
+                                    {SALES_PEOPLE.map((salesperson) => (
+                                        <MenuItem key={salesperson} value={salesperson}>
+                                            {salesperson}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                                {errors.assignedSalesperson && (
+                                    <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.5 }}>
+                                        {errors.assignedSalesperson.message}
+                                    </Typography>
+                                )}
+                            </FormControl>
+                        )}
                     />
                 </Stack>
 
@@ -129,7 +162,7 @@ export function LeadPanelsCreateSection() {
                     multiline
                     minRows={3}
                     error={!!errors.note}
-                    helperText={errors.note?.message}
+                    helperText={errors.note?.message || "Max 500 characters."}
                 />
                 <TextField
                     {...register("createdBy")}

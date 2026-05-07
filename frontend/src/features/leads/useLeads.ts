@@ -2,22 +2,18 @@
 
 import * as React from "react";
 
+import { fetchLeads, patchLead, removeLead } from "./api";
+import {
+  draftToPatch,
+  emptyDraft,
+  generateId,
+  nowIso,
+  toDraft,
+  type LeadDraft,
+} from "./helpers";
 import { loadLeads, saveLeads } from "./storage";
-import type { Lead, LeadNote, LeadStatus } from "./types";
-import { LEAD_STATUSES } from "./types";
-
-import { authedDelete, authedGet, authedPatch } from "@/features/auth/api";
-
-export type LeadDraft = {
-  leadName: string;
-  companyName: string;
-  email: string;
-  phoneNumber: string;
-  leadSource: string;
-  assignedSalesperson: string;
-  status: LeadStatus;
-  estimatedDealValue: string;
-};
+import type { Lead, LeadNote } from "./types";
+import { getUser } from "../auth/user";
 
 export type LeadSummary = {
   totalLeads: number;
@@ -29,146 +25,10 @@ export type LeadSummary = {
   totalValueOfWonDeals: number;
 };
 
-function generateId(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID();
-  }
-  return `${Date.now()}_${Math.random().toString(16).slice(2)}`;
-}
+export function useLeads() {
+  const user = getUser();
+  const userId = user?.id ?? "unknown_user";
 
-function nowIso(): string {
-  return new Date().toISOString();
-}
-
-function asString(value: unknown): string {
-  return typeof value === "string" ? value : "";
-}
-
-function asNumber(value: unknown): number {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string") {
-    const n = Number(value);
-    return Number.isFinite(n) ? n : 0;
-  }
-  return 0;
-}
-
-function asIsoDate(value: unknown): string {
-  const s = asString(value);
-  if (!s) return nowIso();
-  const parsed = Date.parse(s);
-  return Number.isFinite(parsed) ? new Date(parsed).toISOString() : nowIso();
-}
-
-function toLeadStatus(value: unknown): LeadStatus {
-  const s = asString(value);
-  return (LEAD_STATUSES as readonly string[]).includes(s)
-    ? (s as LeadStatus)
-    : "New";
-}
-
-function coerceLeadNote(raw: unknown): LeadNote | null {
-  if (!raw || typeof raw !== "object") return null;
-  const note = raw as Record<string, unknown>;
-  const id = asString(note.id ?? note.noteId ?? note.note_id);
-  if (!id) return null;
-  const createdByRaw =
-    note.createdBy && typeof note.createdBy === "object"
-      ? (note.createdBy as Record<string, unknown>)
-      : null;
-  return {
-    id,
-    content: asString(note.content ?? note.note ?? ""),
-    createdBy: asString(
-      note.createdBy ??
-        note.created_by ??
-        createdByRaw?.userName ??
-        createdByRaw?.email ??
-        "",
-    ),
-    createdDate: asIsoDate(
-      note.createdDate ?? note.created_date ?? note.createdAt,
-    ),
-  };
-}
-
-function coerceLead(raw: unknown): Lead | null {
-  if (!raw || typeof raw !== "object") return null;
-  const lead = raw as Record<string, unknown>;
-  const id = asString(lead.id ?? lead.leadId ?? lead.lead_id);
-  if (!id) return null;
-
-  const notesRaw = lead.notes;
-  const notes = Array.isArray(notesRaw)
-    ? (notesRaw.map(coerceLeadNote).filter(Boolean) as LeadNote[])
-    : [];
-
-  return {
-    id,
-    leadName: asString(lead.leadName ?? lead.lead_name ?? lead.name ?? ""),
-    companyName: asString(lead.companyName ?? lead.company_name ?? ""),
-    email: asString(lead.email ?? ""),
-    phoneNumber: asString(lead.phoneNumber ?? lead.phone_number ?? ""),
-    leadSource: asString(lead.leadSource ?? lead.lead_source ?? lead.source ?? ""),
-    assignedSalesperson: asString(
-      lead.assignedSalesperson ??
-        lead.assigned_salesperson ??
-        lead.assignedTo ??
-        "",
-    ),
-    status: toLeadStatus(lead.status),
-    estimatedDealValue: asNumber(
-      lead.estimatedDealValue ?? lead.estimated_deal_value ?? lead.dealValue ?? 0,
-    ),
-    createdDate: asIsoDate(lead.createdDate ?? lead.created_date ?? lead.createdAt),
-    lastUpdatedDate: asIsoDate(
-      lead.lastUpdatedDate ?? lead.last_updated_date ?? lead.updatedAt,
-    ),
-    notes,
-  };
-}
-
-function emptyDraft(): LeadDraft {
-  return {
-    leadName: "",
-    companyName: "",
-    email: "",
-    phoneNumber: "",
-    leadSource: "",
-    assignedSalesperson: "",
-    status: "New",
-    estimatedDealValue: "",
-  };
-}
-
-function toDraft(lead: Lead): LeadDraft {
-  return {
-    leadName: lead.leadName,
-    companyName: lead.companyName,
-    email: lead.email,
-    phoneNumber: lead.phoneNumber,
-    leadSource: lead.leadSource,
-    assignedSalesperson: lead.assignedSalesperson,
-    status: lead.status,
-    estimatedDealValue:
-      lead.estimatedDealValue === 0 ? "" : String(lead.estimatedDealValue),
-  };
-}
-
-function draftToPatch(draft: LeadDraft): Partial<Omit<Lead, "id" | "createdDate">> {
-  return {
-    leadName: draft.leadName.trim(),
-    companyName: draft.companyName.trim(),
-    email: draft.email.trim(),
-    phoneNumber: draft.phoneNumber.trim(),
-    leadSource: draft.leadSource.trim(),
-    assignedSalesperson: draft.assignedSalesperson.trim(),
-    status: draft.status,
-    estimatedDealValue: Number(draft.estimatedDealValue || 0),
-  };
-}
-
-export function useLeads(userId: string) {
   const [leads, setLeads] = React.useState<Lead[]>(() => loadLeads(userId));
   const [selectedLeadId, setSelectedLeadId] = React.useState<string>(() => {
     const initial = loadLeads(userId);
@@ -196,12 +56,8 @@ export function useLeads(userId: string) {
   }, [leads, userId]);
 
   const refreshFromServer = React.useCallback(async () => {
-    const data = await authedGet<unknown>("/leads").catch(() => null);
-    if (!data || typeof data !== "object") return;
-    const payload = data as { leads?: unknown };
-    if (!Array.isArray(payload.leads)) return;
-
-    const serverLeads = payload.leads.map(coerceLead).filter(Boolean) as Lead[];
+    const serverLeads = await fetchLeads();
+    if (!serverLeads) return;
 
     const previousSelectedLeadId = selectedLeadIdRef.current;
     const nextSelectedLeadId =
@@ -285,8 +141,7 @@ export function useLeads(userId: string) {
     if (!selectedLead) return false;
 
     const patch = draftToPatch(editDraft);
-    const endpoint = `/leads/${selectedLead.id}`;
-    await authedPatch<unknown>(endpoint, patch as Record<string, unknown>);
+    await patchLead(selectedLead.id, patch as Record<string, unknown>);
     updateLead(selectedLead.id, patch);
     return true;
   }, [editDraft, selectedLead, updateLead]);
@@ -294,10 +149,7 @@ export function useLeads(userId: string) {
   const saveLeadEdit = React.useCallback(
     async (leadId: string, draft: LeadDraft) => {
       const patch = draftToPatch(draft);
-      await authedPatch<unknown>(
-        `/leads/${leadId}`,
-        patch as Record<string, unknown>,
-      );
+      await patchLead(leadId, patch as Record<string, unknown>);
       updateLead(leadId, patch);
       if (selectedLeadIdRef.current === leadId) {
         setEditDraft(draft);
@@ -309,7 +161,7 @@ export function useLeads(userId: string) {
 
   const deleteLead = React.useCallback(
     async (leadId: string) => {
-      await authedDelete<unknown>(`/leads/${leadId}`);
+      await removeLead(leadId);
       setLeads((prev) => prev.filter((lead) => lead.id !== leadId));
       if (selectedLeadId === leadId) {
         setSelectedLeadId("");

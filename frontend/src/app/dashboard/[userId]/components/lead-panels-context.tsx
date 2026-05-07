@@ -10,7 +10,6 @@ export type LeadPanelsContextValue = {
     activeSection: DashboardSectionKey;
     setActiveSection: (key: DashboardSectionKey) => void;
     createdByUserId: string;
-    createdByUserName: string;
     section: SidebarItem;
     leadState: ReturnType<typeof useLeads>;
     createForm: UseFormReturn<CreateLeadInput>;

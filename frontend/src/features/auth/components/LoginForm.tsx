@@ -1,26 +1,45 @@
 "use client";
 
 import * as React from "react";
-import { Alert, Box, Button, CircularProgress, Stack, TextField } from "@mui/material";
+import {
+    Alert,
+    Box,
+    Button,
+    CircularProgress,
+    Snackbar,
+    Stack,
+    TextField,
+} from "@mui/material";
 import { Controller, useForm } from "react-hook-form";
 
 import type { LoginValues } from "../types";
 
 export type LoginFormProps = {
     onSubmit?: (values: LoginValues) => void | Promise<void>;
+    onSuccess?: () => void | Promise<void>;
 };
 
-export function LoginForm({ onSubmit }: LoginFormProps) {
+type ToastState = {
+    open: boolean;
+    severity: "success" | "error";
+    message: string;
+};
+
+export function LoginForm({ onSubmit, onSuccess }: LoginFormProps) {
     const {
         control,
         handleSubmit,
         formState: { errors, isSubmitting },
-        setError,
     } = useForm<LoginValues>({
         defaultValues: {
             email: "",
             password: "",
         },
+    });
+    const [toast, setToast] = React.useState<ToastState>({
+        open: false,
+        severity: "success",
+        message: "",
     });
 
     const onValidSubmit = React.useCallback(
@@ -31,18 +50,35 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
                     email: values.email.trim(),
                     password: values.password,
                 });
+
+                setToast({
+                    open: true,
+                    severity: "success",
+                    message: "Login successful.",
+                });
+
+                await new Promise((resolve) => window.setTimeout(resolve, 900));
+                if (onSuccess) {
+                    await onSuccess();
+                }
             } catch (error) {
                 const message =
                     error instanceof Error
                         ? error.message
                         : "Sign-in failed. Please try again.";
-                setError("root", { message });
+                setToast({
+                    open: true,
+                    severity: "error",
+                    message,
+                });
             }
         },
-        [onSubmit, setError]
+        [onSubmit, onSuccess]
     );
 
-    const formErrorMessage = errors.root?.message;
+    const handleToastClose = React.useCallback(() => {
+        setToast((prev) => ({ ...prev, open: false }));
+    }, []);
 
     const textFieldSx = React.useCallback(
         (theme: import("@mui/material/styles").Theme) => ({
@@ -112,8 +148,6 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
                     )}
                 />
 
-                {formErrorMessage ? <Alert severity="error">{formErrorMessage}</Alert> : null}
-
                 <Button
                     type="submit"
                     variant="contained"
@@ -132,6 +166,17 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
                     )}
                 </Button>
             </Stack>
+
+            <Snackbar
+                open={toast.open}
+                autoHideDuration={4000}
+                onClose={handleToastClose}
+                anchorOrigin={{ vertical: "top", horizontal: "right" }}
+            >
+                <Alert onClose={handleToastClose} severity={toast.severity} variant="filled">
+                    {toast.message}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 }

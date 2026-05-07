@@ -13,10 +13,13 @@ export function SignupFormContainer() {
     const handleSubmit = React.useCallback(
         async (values: SignupValues) => {
             await signup(values);
-            router.push("/login");
         },
-        [router]
+        []
     );
 
-    return <SignupForm onSubmit={handleSubmit} />;
+    const handleSuccess = React.useCallback(() => {
+        router.push("/login");
+    }, [router]);
+
+    return <SignupForm onSubmit={handleSubmit} onSuccess={handleSuccess} />;
 }

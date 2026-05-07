@@ -2,7 +2,7 @@ import type { Lead } from "./types";
 
 function canUseLocalStorage(): boolean {
   return (
-    typeof window !== "undefined" && typeof window.localStorage !== "undefined"
+    typeof window !== "undefined" && typeof window.sessionStorage !== "undefined"
   );
 }
 
@@ -13,7 +13,7 @@ function getLeadsStorageKey(userId: string): string {
 export function loadLeads(userId: string): Lead[] {
   if (!canUseLocalStorage()) return [];
 
-  const raw = window.localStorage.getItem(getLeadsStorageKey(userId));
+  const raw = window.sessionStorage.getItem(getLeadsStorageKey(userId));
   if (!raw) return [];
 
   try {
@@ -26,7 +26,7 @@ export function loadLeads(userId: string): Lead[] {
 
 export function saveLeads(userId: string, leads: Lead[]): void {
   if (!canUseLocalStorage()) return;
-  window.localStorage.setItem(
+  window.sessionStorage.setItem(
     getLeadsStorageKey(userId),
     JSON.stringify(leads),
   );

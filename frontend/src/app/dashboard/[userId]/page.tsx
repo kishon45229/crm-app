@@ -40,13 +40,8 @@ export default function DashboardPage({
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
     const { isReady, activeSection, setActiveSection, sidebarOpen, setSidebarOpen, onSelectSection, leadState } =
-        useDashboardPage(userId);
-    const createdByUserName = React.useMemo(() => {
-        const token = getAccessToken();
-        if (!token) return userId;
-        return getAccessTokenUserName(token) ?? userId;
-    }, [userId]);
-
+        useDashboardPage();
+        
     const handleToggleSidebar = () => {
         setSidebarOpen((v) => !v);
     };
@@ -163,7 +158,6 @@ export default function DashboardPage({
                         setActiveSection={setActiveSection}
                         leadState={leadState}
                         createdByUserId={userId}
-                        createdByUserName={createdByUserName}
                     />
                 </Box>
             </Box>

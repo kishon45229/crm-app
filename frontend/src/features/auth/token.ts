@@ -78,6 +78,7 @@ export function getAccessTokenUserId(token: string): string | null {
 export function getAccessTokenUserName(token: string): string | null {
   const payload = decodeJwtPayload(token);
   if (!payload) return null;
+  console.log("Decoded JWT payload:", payload);
 
   const candidates = [
     payload.userName,
